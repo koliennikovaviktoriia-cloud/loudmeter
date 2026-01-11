@@ -194,10 +194,11 @@ function measureLoudness() {
 
     // Convert volume to level 0–4
     let kidLevel = 0;
-    if (volume > 20) kidLevel = 1;
-    if (volume > 35) kidLevel = 2;
-    if (volume > 55) kidLevel = 3;
-    if (volume > 75) kidLevel = 4;
+    if (volume > 40) kidLevel = 1;
+    if (volume > 70) kidLevel = 2;
+    if (volume > 100) kidLevel = 3;
+    if (volume > 130) kidLevel = 4;
+
 
     checkAgainstAllowed(kidLevel);
 
@@ -209,14 +210,16 @@ function checkAgainstAllowed(kidLevel) {
 
     if (kidLevel > allowed) {
         heartsFilled++;
-        if (heartsFilled <= 3) {
-            document.getElementById("h" + heartsFilled).classList.add("filled");
-        }
-        if (heartsFilled >= 3) {
-            document.getElementById("h1").style.borderColor = "red";
-            document.getElementById("h2").style.borderColor = "red";
-            document.getElementById("h3").style.borderColor = "red";
-        }
+        if (heartsFilled <= 5) {
+        document.getElementById("h" + heartsFilled).classList.add("filled");
+    }
+
+    if (heartsFilled >= 5) {
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById("h" + i).style.borderColor = "red";
+    }
+}
+
     }
 }
 
@@ -230,5 +233,6 @@ window.onload = () => {
 
 </body>
 </html>
+
 
 
