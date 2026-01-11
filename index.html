@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Loud Meter</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        gap: 40px;
+        padding: 40px;
+        background: #f5f5f5;
+    }
+
+    /* Hearts */
+    .hearts {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .heart {
+        width: 40px;
+        height: 40px;
+        border: 3px solid red;
+        border-radius: 50% 50% 0 0;
+        position: relative;
+        transform: rotate(-45deg);
+        background: transparent;
+    }
+
+    .heart::before,
+    .heart::after {
+        content: "";
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: inherit;
+        position: absolute;
+    }
+
+    .heart::before {
+        top: -20px;
+        left: 0;
+    }
+
+    .heart::after {
+        left: 20px;
+        top: 0;
+    }
+
+    .filled {
+        background: red !important;
+    }
+
+    /* Loud bar */
+    .bar-container {
+        position: relative;
+        width: 80px;
+        height: 300px;
+        border: 3px solid black;
+        display: flex;
+        flex-direction: column-reverse;
+    }
+
+    .bar-section {
+        flex: 1;
+        border-top: 1px solid black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+    }
+
+    /* Pointer triangle */
+    .pointer {
+        position: absolute;
+        right: -25px;
+        width: 0;
+        height: 0;
+        border-top: 15px solid transparent;
+        border-bottom: 15px solid transparent;
+        border-left: 20px solid black;
+        transition: top 0.3s;
+    }
+
+    /* Level list */
+    .levels {
+        margin-top: 20px;
+    }
+
+    .levels div {
+        margin: 8px 0;
+    }
+
+    button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+</style>
+</head>
+<body>
+
+<div>
+    <div class="hearts">
+        <div class="heart" id="h1"></div>
+        <div class="heart" id="h2"></div>
+        <div class="heart" id="h3"></div>
+    </div>
+
+    <div class="bar-container">
+        <div class="pointer" id="pointer"></div>
+
+        <div class="bar-section" style="background:#ffcccc">4</div>
+        <div class="bar-section" style="background:#ffd9b3">3</div>
+        <div class="bar-section" style="background:#ffffb3">2</div>
+        <div class="bar-section" style="background:#ccffcc">1</div>
+        <div class="bar-section" style="background:#cce6ff">0</div>
+    </div>
+</div>
+
+<div class="levels">
+    <h2>Levels</h2>
+    <div>0 = No talking</div>
+    <div>1 = Whisper to your friend</div>
+    <div>2 = Talk to your partner normally</div>
+    <div>3 = Talk normally to everyone</div>
+    <div>4 = Talk however you want</div>
+
+    <h3>Teacher Controls</h3>
+    <label>Set allowed level:</label>
+    <select id="levelSelect">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+    </select>
+
+    <button onclick="simulateKidTalking()">Kid talks louder</button>
+</div>
+
+<script>
+let heartsFilled = 0;
+
+// Move pointer when teacher changes level
+function updatePointer() {
+    const level = Number(document.getElementById("levelSelect").value);
+    const pointer = document.getElementById("pointer");
+
+    const sectionHeight = 300 / 5;
+    pointer.style.top = (300 - (level + 1) * sectionHeight + sectionHeight/2 - 15) + "px";
+}
+
+document.getElementById("levelSelect").addEventListener("change", updatePointer);
+updatePointer();
+
+
+// ------------------------------
+// MICROPHONE LOUDNESS DETECTION
+// ------------------------------
+
+let audioContext;
+let analyser;
+let dataArray;
+
+async function startMic() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const source = audioContext.createMediaStreamSource(stream);
+
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    source.connect(analyser);
+
+    measureLoudness();
+}
+
+function measureLoudness() {
+    analyser.getByteFrequencyData(dataArray);
+
+    // Average volume
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+    }
+    let volume = sum / dataArray.length;
+
+    // Convert volume to level 0–4
+    let kidLevel = 0;
+    if (volume > 20) kidLevel = 1;
+    if (volume > 35) kidLevel = 2;
+    if (volume > 55) kidLevel = 3;
+    if (volume > 75) kidLevel = 4;
+
+    checkAgainstAllowed(kidLevel);
+
+    requestAnimationFrame(measureLoudness);
+}
+
+function checkAgainstAllowed(kidLevel) {
+    const allowed = Number(document.getElementById("levelSelect").value);
+
+    if (kidLevel > allowed) {
+        heartsFilled++;
+        if (heartsFilled <= 3) {
+            document.getElementById("h" + heartsFilled).classList.add("filled");
+        }
+        if (heartsFilled >= 3) {
+            document.getElementById("h1").style.borderColor = "red";
+            document.getElementById("h2").style.borderColor = "red";
+            document.getElementById("h3").style.borderColor = "red";
+        }
+    }
+}
+</script>
+
+
+</body>
+</html>
